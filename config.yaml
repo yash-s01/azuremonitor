@@ -1,0 +1,46 @@
+extensions:
+  health_check:
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  azuremonitor:
+    subscription_id: ${SUBSCRIPTION_ID}
+    tenant_id: ${TENANT_ID}
+    client_id: ${CLIENT_ID}
+    client_secret: ${CLIENT_SECRET}
+    cloud: AzureCloud
+    collection_interval: 60s
+    initial_delay: 1s
+
+processors:
+  batch:
+    send_batch_size: 10000
+    timeout: 30s
+
+exporters:
+  debug:
+    verbosity: detailed
+
+  otlphttp:
+    endpoint: "https://otel.kloudmate.dev:4318"
+    headers:
+      Authorization: ${AUTH_KEY}  # Replace with your actual KloudMate authentication key
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp, azuremonitor]
+      processors: [batch]
+      exporters: [debug, otlphttp]
+
+  extensions: [health_check, pprof, zpages]
